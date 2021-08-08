@@ -10,6 +10,7 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import kotlin.NumberFormatException
 
 @RequiresApi(Build.VERSION_CODES.M)
 class MainActivity : AppCompatActivity() {
@@ -61,10 +62,17 @@ class MainActivity : AppCompatActivity() {
         isOperator = false
 
         val expressionText = expressionTextView.text.split("")
+
         if(expressionText.isNotEmpty() && expressionText.last().length >= 15) {
             Toast.makeText(this, "15자리 까지만 사용할 수 있습니다.", Toast.LENGTH_SHORT).show()
             return
+        } else if (expressionText.last().isEmpty() && number == "0") {
+            Toast.makeText(this, "0은 제일 앞에 올 수 없습니다.", Toast.LENGTH_SHORT).show()
+            return
         }
+
+        expressionTextView.append(number)
+        resultTextView.text = calculateExpression()
     }
 
     fun operatorButtonClicked(operator: String) {
@@ -99,8 +107,34 @@ class MainActivity : AppCompatActivity() {
         hasOperator = true
     }
 
-    fun clearButtonClicked(v: View) {
+    fun calculateExpression() : String {
+        val expressionTexts = expressionTextView.text.split(" ")
 
+        if(hasOperator.not() || expressionTexts.size != 3) {
+            return ""
+        } else if(expressionTexts[0].isNumber().not() || expressionTexts[2].isNumber().not()){
+            return ""
+        }
+
+        val exp1 = expressionTexts[0].toBigInteger()
+        val exp2 = expressionTexts[2].toBigInteger()
+        val op = expressionTexts[1]
+
+        return when(op) {
+            "+" -> (exp1 + exp2).toString()
+            "-" -> (exp1 - exp2).toString()
+            "x" -> (exp1 * exp2).toString()
+            "/" -> (exp1 / exp2).toString()
+            "%" -> (exp1 % exp2).toString()
+            else -> ""
+        }
+    }
+
+    fun clearButtonClicked(v: View) {
+        expressionTextView.text = ""
+        resultTextView.text = ""
+        isOperator = false
+        hasOperator = false
     }
 
     fun historyButtonButtonClicked(v: View) {
@@ -108,6 +142,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun resultButtonClicked(v: View) {
+        val expressionTexts = expressionTextView.text.split(" ")
 
+        if(expressionTextView.text.isEmpty() || expressionTexts.size == 1) {
+            return
+        }
+
+        if(expressionTexts.size != 3 || !hasOperator) {
+            Toast.makeText(this, "아직 완성되지 않은 수식입니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if(expressionTexts[0].isNumber().not() || expressionTexts[2].isNumber().not()){
+            Toast.makeText(this, "오류가 발생하였습니다.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val expressionText = expressionTextView.text.toString()
+        val resultText = calculateExpression()
+
+        resultTextView.text = ""
+        expressionTextView.text = resultText
+
+        isOperator = false
+        hasOperator = false
+    }
+}
+
+fun String.isNumber(): Boolean {
+    return try {
+        this.toBigInteger()
+        return true
+    } catch (e: NumberFormatException) {
+        false
     }
 }
